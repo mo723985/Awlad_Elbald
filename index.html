@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d6efd">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="My App">
+
+    <title>نظام إدارة محل اولاد البلد</title>
+    <!-- ملفات التنسيق -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- ============================================ -->
+    <!-- 1. شاشة تسجيل الدخول (Login) -->
+    <!-- ============================================ -->
+    <div id="view-login" class="login-overlay">
+        <div class="login-box">
+            <h2>🔐 تسجيل الدخول</h2>
+            <p>أدخل رمز النظام للمتابعة</p>
+            <form id="form-login">
+                <input type="password" id="login-password" placeholder="كلمة المرور" required>
+                <button type="submit" class="btn-primary" style="width: 100%;">دخول</button>
+                <p id="login-error" class="error-text"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 2. الحاوية الرئيسية للتطبيق -->
+    <!-- ============================================ -->
+    <div id="app-container" style="display: none;">
+        
+        <!-- القائمة العلوية (تختفي عند الطباعة) -->
+        <nav class="main-nav no-print">
+            <div class="nav-logo"><i class="fa fa-wrench"></i> اولاد البلد</div>
+            <div class="nav-links">
+                <button class="nav-btn" data-target="view-dashboard">الرئيسية</button>
+                <button class="nav-btn" data-target="view-inventory">المخزن</button>
+                <button class="nav-btn" data-target="view-partners">العملاء والموردين</button>
+                <button class="nav-btn" data-target="view-invoices">الفواتير</button>
+                <button id="btn-logout" class="btn-danger">خروج</button>
+            </div>
+        </nav>
+
+        <main id="main-content">
+            
+            <!-- أ) لوحة التحكم (Dashboard) -->
+            <section id="view-dashboard" class="app-view">
+                <div class="section-header">
+                    <h2>📊 لوحة المعلومات</h2>
+                </div>
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <h3><i class="fa fa-users"></i> عدد العملاء والموردين</h3>
+                        <p id="stat-customers-count">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3><i class="fa fa-box"></i> أصناف بالمخزن</h3>
+                        <p id="stat-stock-count">0</p>
+                    </div>
+                </div>
+                <!-- الزر هنا يحمل ID محدد لربطه بملف app.js -->
+                <div class="quick-actions no-print" style="margin-top: 30px; text-align: center;">
+                    <button id="btn-quick-invoice" class="btn-primary-lg">🧾 إنشاء فاتورة جديدة</button>
+                </div>
+            </section>
+
+            <!-- ب) المخزن (Inventory) -->
+            <section id="view-inventory" class="app-view" style="display: none;">
+                <div class="section-header">
+                    <h2>📦 إدارة المخزن</h2>
+                    <button id="btn-open-add-product" class="btn-primary no-print">+ صنف جديد</button>
+                </div>
+                <div class="filter-bar no-print">
+                    <input type="text" id="inventory-search-input" placeholder="بحث باسم المنتج...">
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم الصنف</th>
+                                <th>سعر الشراء</th>
+                                <th>سعر البيع</th>
+                                <th>الكمية الحالية</th>
+                                <th>حد الأمان</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-list-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ج) العملاء والموردين (Partners) -->
+            <section id="view-partners" class="app-view" style="display: none;">
+                <div class="section-header">
+                    <h2>👥 العملاء والموردين</h2>
+                    <button id="btn-open-add-partner" class="btn-primary no-print">+ اضافة جديد</button>
+                </div>
+                <div class="filter-bar no-print">
+                    <select id="partner-type-filter">
+                        <option value="all">عرض الكل</option>
+                        <option value="customer">العملاء فقط</option>
+                        <option value="supplier">الموردين فقط</option>
+                    </select>
+                    <input type="text" id="partner-search-input" placeholder="بحث بالاسم...">
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>النوع</th>
+                                <th class="no-print">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partners-list-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- د) كشف الحساب (Ledger) -->
+            <section id="view-partner-details" class="app-view" style="display: none;">
+                <div class="section-header">
+                    <button class="btn-back no-print" data-target="view-partners">← عودة</button>
+                    <h2 id="ledger-partner-name">اسم الشريك</h2>
+                    <button onclick="window.print()" class="btn-success no-print"><i class="fa fa-print"></i> طباعة الكشف</button>
+                </div>
+                <div class="balance-card">
+                    <h3 id="ledger-current-balance">الرصيد: 0.00</h3>
+                </div>
+                <div class="no-print" style="margin-bottom: 20px;">
+                    <button id="btn-ledger-add-payment" class="btn-primary">💰 تسجيل دفعة نقدية</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>نوع الحركة</th>
+                                <th>القيمة</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledger-transactions-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- هـ) إنشاء فاتورة (Create Invoice) -->
+            <section id="view-create-invoice" class="app-view" style="display: none;">
+                
+                <!-- /// 1. منطقة الطباعة فقط (تظهر في الورقة) /// -->
+                <div class="print-only invoice-header-print">
+                    <div class="shop-info">
+                        <h1>مؤسسة اولاد البلد</h1>
+                        <p>📍 العنوان: سعد شاويش</p>
+                        <p>📞 تليفون : 01203089081</p>
+                    </div>
+                    <div class="invoice-details-print">
+                        <h2 id="print-invoice-title">فاتورة</h2>
+                        <p>التاريخ: <span id="print-date"></span></p>
+                        <p>السيد/السادة: <span id="print-partner"></span></p>
+                        <p>رقم الفاتورة: <span id="print-invoice-id"></span></p>
+                    </div>
+                </div>
+                <!-- /// نهاية منطقة الطباعة /// -->
+
+                <div class="section-header no-print">
+                    <button class="btn-back" data-target="view-dashboard">❌ إلغاء</button>
+                    <h2>📝 فاتورة جديدة</h2>
+                </div>
+
+                <form id="form-create-invoice">
+                    <!-- البيانات الأساسية -->
+                    <div class="invoice-grid no-print">
+                        <div class="form-group">
+                            <label>نوع الفاتورة</label>
+                            <select id="invoice-type">
+                                <option value="sale">بيع (للعميل)</option>
+                                <option value="purchase">شراء (من مورد)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>اختر الشريك</label>
+                            <select id="invoice-partner-select" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>تاريخ الفاتورة</label>
+                            <input type="date" id="invoice-date" required>
+                        </div>
+                    </div>
+                    
+                    <hr class="no-print" style="margin: 20px 0; border-top: 1px dashed #ccc;">
+
+                    <!-- اختيار الأصناف (مع حقل السعر الجديد) -->
+                    <div class="item-selector-box no-print">
+                        <div class="form-group" style="flex: 2; position: relative;">
+                            <label>بحث عن صنف</label>
+                            <input type="text" id="invoice-product-search" placeholder="اكتب اسم المنتج..." autocomplete="off">
+                            <div id="product-search-results" class="search-dropdown" style="display: none;"></div>
+                            <input type="hidden" id="invoice-product-select">
+                        </div>
+                        <div class="form-group" style="width: 80px;">
+                            <label>الكمية</label>
+                            <input type="number" id="invoice-qty" value="1" min="1">
+                        </div>
+                        <div class="form-group" style="width: 120px;">
+                            <label id="label-price-display">سعر الوحدة</label>
+                            <input type="number" id="invoice-price" placeholder="0.00">
+                        </div>
+                        
+                        <!-- هذا الحقل يظهر فقط عند الشراء لتحديث سعر البيع -->
+                        <div class="form-group" id="group-new-sell-price" style="display: none; width: 140px;">
+                            <label style="color: var(--success-color); font-weight: bold;">سعر البيع الجديد</label>
+                            <input type="number" id="invoice-new-sell-price" placeholder="تحديث السعر">
+                        </div>
+
+                        <button type="button" id="btn-add-item-to-list" class="btn-success">إضافة</button>
+                    </div>
+
+                    <!-- جدول الأصناف -->
+                    <div class="table-container">
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th>الصنف</th>
+                                    <th>الكمية</th>
+                                    <th>سعر الوحدة</th>
+                                    <th>الإجمالي</th>
+                                    <th class="no-print">حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoice-items-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- ملخص الفاتورة (للشاشة والطباعة) -->
+                    <div class="invoice-summary">
+                        <!-- الإجمالي -->
+                        <div class="summary-row">
+                            <span>الإجمالي (Total):</span>
+                            <span id="invoice-total-amount" class="no-print">0.00</span>
+                            <span id="print-total" class="print-only" style="display:none;">0.00</span>
+                        </div>
+
+                        <!-- المدفوع -->
+                        <div class="summary-row">
+                            <span>المدفوع (Paid):</span>
+                            <!-- إدخال للشاشة -->
+                            <input type="number" id="invoice-paid-amount" value="0" class="no-print">
+                            <!-- نص للطباعة -->
+                            <span id="print-paid" class="print-only" style="display:none;">0.00</span>
+                        </div>
+
+                        <!-- المتبقي (يظهر في الطباعة فقط) -->
+                        <div class="summary-row print-only" style="display:none; margin-top: 10px; border-top: 1px solid #000; padding-top: 5px;">
+                            <span>المتبقي (Remaining):</span>
+                            <span id="print-remaining" style="font-weight: bold;">0.00</span>
+                        </div>
+
+                        <button type="submit" class="btn-primary-lg no-print">💾 حفظ وطباعة</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- و) سجل الفواتير -->
+            <section id="view-invoices" class="app-view" style="display: none;">
+                <div class="section-header">
+                    <h2>🗂️ سجل الفواتير</h2>
+                </div>
+                <div class="table-container">
+                    <div class="filter-bar no-print">
+
+    <!-- بحث برقم الفاتورة -->
+    <input 
+        type="text" 
+        id="invoice-search-input"
+        placeholder="🔎 بحث برقم الفاتورة..."
+    >
+
+</div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>رقم الفاتورة</th>
+                                <th>التاريخ</th>
+                                <th>الشريك</th>
+                                <th>النوع</th>
+                                <th>القيمة</th>
+                                <th>المدفوع</th>
+                                <th class="no-print">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoices-list-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 3. المودالات (Popups) -->
+    <!-- ============================================ -->
+    <div id="modal-overlay" class="modal-overlay" style="display: none;">
+        
+        <!-- إضافة صنف -->
+        <div id="modal-add-product" class="modal-content" style="display: none;">
+            <h3>إضافة صنف جديد</h3>
+            <form id="form-add-product">
+                <input type="text" id="new-prod-name" placeholder="اسم الصنف" required>
+                <input type="number" id="new-prod-buy" placeholder="سعر الشراء" step="0.01" required>
+                <input type="number" id="new-prod-sell" placeholder="سعر البيع" step="0.01" required>
+                <input type="number" id="new-prod-stock" placeholder="الرصيد الافتتاحي" required>
+                <div class="modal-actions">
+                    <button type="button" class="btn-close-modal btn-danger">إلغاء</button>
+                    <button type="submit" class="btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- إضافة شريك -->
+        <div id="modal-add-partner" class="modal-content" style="display: none;">
+            <h3>إضافة عميل / مورد</h3>
+            <form id="form-add-partner">
+                <input type="text" id="new-partner-name" placeholder="الاسم" required>
+                <select id="new-partner-type" required>
+                    <option value="customer">عميل</option>
+                    <option value="supplier">مورد</option>
+                </select>
+                <div class="modal-actions">
+                    <button type="button" class="btn-close-modal btn-danger">إلغاء</button>
+                    <button type="submit" class="btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- إضافة دفعة -->
+        <div id="modal-add-payment" class="modal-content" style="display: none;">
+            <h3>تسجيل دفعة نقدية</h3>
+            <p id="payment-partner-name-display" style="text-align: center; font-weight: bold;"></p>
+            <form id="form-add-payment">
+                <input type="hidden" id="payment-partner-id">
+                <input type="number" id="payment-amount" placeholder="المبلغ" step="0.01" required>
+                <input type="date" id="payment-date" required>
+                <input type="text" id="payment-note" placeholder="ملاحظات">
+                <div class="modal-actions">
+                    <button type="button" class="btn-close-modal btn-danger">إلغاء</button>
+                    <button type="submit" class="btn-success">تأكيد</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- استدعاء ملف الجافاسكريبت الرئيسي -->
+    <script type="module" src="app.js"></script>
+    <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
