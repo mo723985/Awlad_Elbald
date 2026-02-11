@@ -475,13 +475,7 @@ window.printInvoiceById = async (invoiceId) => {
         const currentView = document.querySelector('.app-view[style*="display: block"]')?.id;
         document.getElementById('view-create-invoice').style.display = 'block';
         
-        setTimeout(() => {
-  setTimeout(() => {
-  window.print();
-}, 300);
-
-}, 300);
-
+        window.print();
 
         // العودة
         document.getElementById('view-create-invoice').style.display = 'none';
